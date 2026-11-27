@@ -318,7 +318,9 @@ var CATS = [
   {id:'italian', label:'Italian'},
   {id:'steakhouse', label:'Steakhouse'},
   {id:'other', label:'Other'},
-  {id:'sight', label:'Sights & viewpoints'}
+  {id:'sight', label:'Sights & viewpoints'},
+  {id:'overlooks', label:'Scenic overlooks'},
+  {id:'pullouts', label:'Marked pullouts'}
 ];
 var CAT_LABEL = {marker:'Historical marker', winery:'Winery & vineyard', food:'Food, drink & stays', sight:'Sights & viewpoints'};
 var TAGS = {
@@ -368,6 +370,23 @@ function isSteakhouse(r){
   if(/steakhouse/i.test(t) && !/steakhouse[^.!?]{0,60}burgers?\b/i.test(t)) return true;
   return false;
 }
+/* Scenic overlooks + Marked pullouts (Dave, Nov 27, 2026): two sights-side
+   pills, same classifier as Gold Country Places. This front end's only sight
+   today (Triton Museum) fits neither kind, so both pills count 0 here and
+   stay hidden (zero-count pills do not render) until a southern overlook or
+   pullout enters the database. */
+var OVERLOOK_SLUGS = { 'donnell-vista': 1, 'leavitt-falls-vista-point': 1 };
+var PULLOUT_SLUGS = { 'cape-horn-vista': 1, 'sr-4-vista-turnout-at-spicer-meadow-rd': 1 };
+function isOverlook(r){
+  if(r._cat!=='sight') return false;
+  if(OVERLOOK_SLUGS[r.slug]) return true;
+  return /scenic overlook/i.test(r.short_description||'');
+}
+function isPullout(r){
+  if(r._cat!=='sight') return false;
+  if(PULLOUT_SLUGS[r.slug]) return true;
+  return /marked (roadside )?pullout/i.test(r.short_description||'');
+}
 /* Asian (Dave, Nov 24): the umbrella over every Asian-cuisine restaurant —
    all of Chinese, plus Japanese/sushi, Thai, Vietnamese, Korean, Indian,
    Nepalese/Himalayan, Laotian, Filipino-led and Mongolian places. Strong
@@ -390,6 +409,8 @@ var TAGFNS = {
   asian: isAsian,
   italian: isItalian,
   steakhouse: isSteakhouse,
+  overlooks: isOverlook,
+  pullouts: isPullout,
   other: function(r){
     if(r._cat!=='food') return false;
     for(var t in TAGS){ if(TAGS[t][r.slug]) return false; }
@@ -591,7 +612,7 @@ function facetTowns(){
   return counts;
 }
 function renderPills(){
-  var counts={all:0, marker:0, winery:0, food:0, sight:0, burger:0, pizza:0, saloon:0, roadhouse:0, chinese:0, asian:0, italian:0, steakhouse:0, other:0};
+  var counts={all:0, marker:0, winery:0, food:0, sight:0, burger:0, pizza:0, saloon:0, roadhouse:0, chinese:0, asian:0, italian:0, steakhouse:0, other:0, overlooks:0, pullouts:0};
   rows.forEach(function(r){ if(state.hideVisited && visited[r.slug]) return; counts.all++; counts[r._cat]++; for(var t in TAGS){ if(TAGS[t][r.slug]) counts[t]++; } for(var f in TAGFNS){ if(TAGFNS[f](r)) counts[f]++; } });
   if(state.cat!=='all' && !counts[state.cat]){ state.cat='all'; saveState(); }
   var html='';
