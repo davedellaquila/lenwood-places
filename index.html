@@ -914,11 +914,29 @@ function cardHTML(r){
   return h;
 }
 function scrollToResults(){
-  var controls=document.querySelector('.controls');
-  var sticky=controls && window.getComputedStyle(controls).position==='sticky';
-  var offset=sticky ? controls.getBoundingClientRect().height : 0;
-  var y=grid.getBoundingClientRect().top + window.scrollY - offset - 8;
-  window.scrollTo(0, Math.max(0, y));
+  var controls=document.getElementById('controls');
+  /* Filter-change reset (Dave, Nov 27, 2026): a pill change lands the reader
+     on the FIRST item of the new result set, directly under the collapsed
+     sticky filter row. The previous version measured against the expanded
+     filter block and let the layout shift afterwards (collapse animation /
+     scroll anchoring), which left the first card a full screen below the
+     fold — the reader's "scroll position is unchanged" bug. So: end any
+     manual expansion, settle the collapsed state instantly, then measure
+     and scroll once the settled layout is in place. Search typing and the
+     search clear button deliberately never call this (Dave, Nov 24, 2026). */
+  if(controls && (window.scrollY||0) > 40 && !controls.classList.contains('collapsed')){
+    fsManualOpen = false;
+    finishFsState(true);
+    var sum=document.getElementById('filtersum');
+    if(sum) sum.setAttribute('aria-expanded','false');
+    renderFilterSummary();
+  }
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    var sticky=controls && window.getComputedStyle(controls).position==='sticky';
+    var offset=sticky ? controls.getBoundingClientRect().height : 0;
+    var y=grid.getBoundingClientRect().top + window.scrollY - offset - 8;
+    window.scrollTo(0, Math.max(0, y));
+  }); });
 }
 function renderGrid(reset){
   if(!dataReady) return;
